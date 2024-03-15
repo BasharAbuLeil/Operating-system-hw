@@ -19,9 +19,6 @@ void freeResources(pthread_t * threads, thread_T * threadsAbout);
 
 pthread_mutex_t lock;
 pthread_cond_t pendingCond, noPlaceCond, fsh7daCond;
-int pendingLength ,handlingLength;
-pendingLength=0;
-handlingLength=0;
 Queue* pendingQue ,handlingQue ;
 handlingQue=NULL;
 pendingQue=NULL;
@@ -79,21 +76,46 @@ int main(int argc, char *argv[])
         //adding request Section
         pthread_mutex_lock(&lock);
         if(strcmp(schedMod,"dt")==0){
-
+            if(handlingQue->m_length+pendingQue->m_length==atoi(argv[3])){
+                Close(req->m_fd);
+            }
+            enqueue(pendingQue,req);
+            pthread_cond_signal(&pendingCond);
         }
         if(strcmp(schedMod,"random") == 0){
-
+            /////////////bouns
         }
         if(strcmp(schedMod,"block")==0){
             while(handlingQue->m_length+pendingQue->m_length==atoi(argv[3]))
                 pthread_cond_wait(&noPlaceCond,&lock);
+            enqueue(pendingQue,req);
+            pthread_cond_signal(&pendingCond);
         }
         if(strcmp(schedMod,"dh")==0){
-
+            if(handlingQue->m_length+pendingQue->m_length==atoi(argv[3])){
+                if(pendingQue->m_length != 0) {
+                    request* tempReq = dequeue(pendingQue);
+                    Close(tempReq->m_fd);
+                    enqueue(pendingQue,req);
+                }
+                else{
+                    close(req->m_fd);
+                }
+            }
+            enqueue(pendingQue,req);
+            pthread_cond_signal(&pendingCond);
         }
         if(strcmp(schedMod,"bf") == 0){
-
+            if(handlingQue->m_length+pendingQue->m_length==atoi(argv[3])) {
+                while(pendingQue->m_legnth + handlingQue->m_length != 0){
+                    pthread_cond_wait(&fsh7daCond, &lock);
+                }
+                close(req->m_fd);
+            }
+            enqueue(pendingQue,req);
+            pthread_cond_signal(&pendingCond);
         }
+        pthread_mutex_unlock(&lock);
 
     }
     freeResources(threads,threadsAbout);
