@@ -100,3 +100,19 @@ request* deleteNode(Queue* que,QueueNode node){
     free(node);
     que->m_length--;
 }
+
+
+
+
+
+
+
+void buildThreads(pthread_t* threads,int size,thread_T* threadAbout){
+    for(int i=0;i<size;++i){
+        threadAbout[i].m_thread = &threads[i];
+        threadAbout[i].m_dynamic=0;
+        threadAbout[i].m_count=0;
+        threadAbout[i].m_static=0;
+        threadAbout[i].m_id=i;
+    }
+}

@@ -1,6 +1,7 @@
 #ifndef QUEUE_H
 #define QUEUE_H
 #include "segel.h"
+#include "time.h"
 
 typedef struct thread_T
 {
@@ -44,8 +45,7 @@ QueueNode getNode(Queue* que,request* r);
 
 request* deleteNode(Queue* que,QueueNode node);
 
-
-
+void buildThreads(pthread_t* threads,int size,thread_T* threadAbout);
 
 
 
