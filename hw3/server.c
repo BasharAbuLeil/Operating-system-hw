@@ -14,7 +14,7 @@
 //
 
 // HW3: Parse the new arguments too
-void reqManging();
+void* reqManging(void* arguments);
 void freeResources(pthread_t * threads, thread_T * threadsAbout);
 
 pthread_mutex_t lock;
@@ -134,4 +134,32 @@ void freeResources(pthread_t * threads, thread_T * threadsAbout){
     free(threadsAbout);
     free(threads);
     pthread_mutex_destroy(&lock);
+}
+
+
+
+void* reqManging(void* arguments){
+    thread_T* thread = (thread_T*)arguments;
+    request* req;
+    while(1){
+        pthread_mutex_lock(&lock);
+        while(pendingQue->m_length == 0)  pthread_cond_wait(&pendingCond,&lock);
+        req = dequeue(pendingQue);
+        //struct timezone t;
+        gettimeofday(&req->m_dispatch,NULL);
+        timersub(&req->m_dispatch,&req->m_arrival,&req->m_dispatch);
+        req->m_thread = thread;
+        enqueue(pendingQue,req);
+        pthread_mutex_unlock(&lock);
+        req->m_thread->m_count++;
+        requestHandle(req->m_fd);
+        pthread_mutex_lock(&lock);
+        removeNode(pendingQue,getNode(handlingQue,req));
+        pthread_cond_signal(&noPlaceCond);        
+        Close(req->m_fd);
+        if(pendingQue->m_length + handlingQue->m_length== 0) pthread_cond_signal(&fsh7daCond);
+        pthread_mutex_unlock(&lock);
+    }
+    return NULL;
+    
 }

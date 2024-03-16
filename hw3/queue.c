@@ -74,24 +74,26 @@ void demoilshQueue(Queue* que){
 request* deleteNode(Queue* que,QueueNode node){
     if(!que||que->m_length==0||!node)
         return NULL;
+    request* temp= node->m_req;
     if(que->m_length==1){
         free(node);
         que->m_length--;
         que->m_first=que->m_tail=NULL;
+        return temp;
     }
     if(que->m_first==node){
         que->m_first=que->m_first->m_next;
         que->m_first->m_previous=NULL;
         free(node);
         que->m_length--;
-        return;
+        return temp;
     }
     else if(que->m_tail==node){
         que->m_tail=que->m_tail->m_previous;
         que->m_tail->m_next=NULL;
         free(node);
         que->m_length--;
-        return;
+        return temp;
     }
     QueueNode nodePrev=node->m_previous;
     QueueNode nodeNext=node->m_next;
@@ -99,6 +101,7 @@ request* deleteNode(Queue* que,QueueNode node){
     nodeNext->m_previous=nodePrev;
     free(node);
     que->m_length--;
+    return temp;
 }
 
 
