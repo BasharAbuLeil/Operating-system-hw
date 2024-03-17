@@ -49,12 +49,4 @@ void buildThreads(pthread_t* threads,int size,thread_T* threadAbout);
 
 
 
-
-
-
-
-
-
-
-
 #endif

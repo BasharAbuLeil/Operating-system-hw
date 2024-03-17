@@ -1,5 +1,5 @@
 #ifndef __REQUEST_H__
-
-void requestHandle(int fd);
+#include "queue.h"
+void requestHandle(request *req);
 
 #endif

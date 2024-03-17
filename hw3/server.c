@@ -1,6 +1,6 @@
 #include "segel.h"
 #include "request.h"
-#include "queue.h"
+#include"queue.h"
 #include "stdbool.h"
 #define FAILED -1
 // 
@@ -14,14 +14,13 @@
 //
 
 // HW3: Parse the new arguments too
-void* reqManging(void* arguments);
-void freeResources(pthread_t * threads, thread_T * threadsAbout);
 
 pthread_mutex_t lock;
 pthread_cond_t pendingCond, noPlaceCond, fsh7daCond;
-Queue* pendingQue ,handlingQue ;
-handlingQue=NULL;
-pendingQue=NULL;
+Queue* pendingQue =NULL;
+Queue* handlingQue=NULL;
+void* reqManging(void* arguments);
+void freeResources(pthread_t * threads, thread_T * threadsAbout);
 
 void getargs(int *port, int argc, char *argv[])
 {
@@ -107,7 +106,7 @@ int main(int argc, char *argv[])
         }
         if(strcmp(schedMod,"bf") == 0){
             if(handlingQue->m_length+pendingQue->m_length==atoi(argv[3])) {
-                while(pendingQue->m_legnth + handlingQue->m_length != 0){
+                while(pendingQue->m_length + handlingQue->m_length != 0){
                     pthread_cond_wait(&fsh7daCond, &lock);
                 }
                 close(req->m_fd);
@@ -152,9 +151,9 @@ void* reqManging(void* arguments){
         enqueue(pendingQue,req);
         pthread_mutex_unlock(&lock);
         req->m_thread->m_count++;
-        requestHandle(req->m_fd);
+        requestHandle(req);
         pthread_mutex_lock(&lock);
-        removeNode(pendingQue,getNode(handlingQue,req));
+        deleteNode(pendingQue,getNode(handlingQue,req));
         pthread_cond_signal(&noPlaceCond);        
         Close(req->m_fd);
         if(pendingQue->m_length + handlingQue->m_length== 0) pthread_cond_signal(&fsh7daCond);
