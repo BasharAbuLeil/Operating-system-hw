@@ -19,7 +19,7 @@ void enqueue(Queue * que, request* r1){
     if(!que)
         return;
     QueueNode temp=malloc(sizeof(*temp));
-    if(!temp)
+    if(!temp||!r1)
         return;
     temp->m_req=r1;
     if(que->m_length==0){
@@ -119,3 +119,106 @@ void buildThreads(pthread_t* threads,int size,thread_T* threadAbout){
         threadAbout[i].m_id=i;
     }
 }
+/*requestInfo errorValue(){
+    requestInfo r;
+    r.fd = -1;
+    r.thread = NULL;
+    return r;
+}
+
+Queue *initQueue() {
+    Queue *newQueue = malloc(sizeof(Queue));
+    if (newQueue == NULL) {
+        return NULL;
+    }
+    newQueue->size = 0;
+    newQueue->head = newQueue->last = NULL;
+    return newQueue;
+}
+
+QueueStatus push(Queue* queue,T val){
+    if(queue == NULL){
+        return NULL_ARG;
+    }
+    Node* newNode = (Node*)malloc(sizeof(Node));
+    
+    if(newNode == NULL){
+        return MALLOC_FAIL;
+    }
+    newNode->next=newNode->prev=NULL;
+    if(queue->head ==NULL){
+        queue->head =queue->last = newNode;
+
+    }else{
+        queue->last->next = newNode;
+        newNode->prev = queue->last;
+        queue->last = newNode;
+    }
+    newNode->next = NULL;
+    newNode->data = val;
+    queue->size++;
+    return SUCCESS;
+}
+
+
+T pop(Queue* queue){
+    return removeNode(queue,queue->head);
+}
+
+T removeNode(Queue* queue, Node* node){
+    if(queue == NULL || queue->size ==0 || node == NULL){
+        return errorValue();
+    }
+    T result = node->data;
+    if(node->prev ==NULL){//first
+        if(node->next ==NULL){//and last
+            queue->head = queue->last = NULL;
+        }else{
+            node->next->prev = NULL;
+            queue->head = node->next;
+        }
+    }else{//last
+        if(node->next ==NULL){
+            if(node->prev ==NULL){//and last
+                queue->head = queue->last = NULL;
+            }else{
+                node->prev->next = NULL;
+                queue->last = node->prev;
+            }
+        }else{
+            node->next->prev =node->prev;
+            node->prev->next = node->next;
+        }
+    }
+    queue->size--;
+    free(node);
+    return result;
+}
+
+
+QueueStatus destroyQueue(Queue* queue){
+    if(queue == NULL){
+        return NULL_ARG;
+    }
+    Node* curr = queue->head;
+    while(curr != NULL){
+        Node* temp = curr->next;
+        free(curr);
+        curr = temp;
+    }
+    return SUCCESS;
+}
+
+Node* findNode(Queue* queue, T data){
+    if(queue == NULL){
+        return NULL;
+    }
+    Node* curr = queue->head;
+    while(curr){
+        if(curr->data.fd == data.fd){
+            break;
+        }
+        curr=curr->next;
+    }
+    return curr;
+}*/
