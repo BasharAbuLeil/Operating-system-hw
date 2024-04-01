@@ -17,10 +17,12 @@ size_t metaDataBlocks = 0;
 bool is_initialized =false;
 
 MallocMetaData* getMetaData(void*p);
-void combine(MallocMetaData* p);
+void combine(void *p,size_t m_maxCapSize);
 void deleteMappedBl(void *p);
-
+bool isMergible(void *p);
+unsigned long gtbudd(void* p, size_t custSiz);
 static void putNew(size_t size,void* ptr);
+void* srealloc(void* oldp, size_t size); 
 int golbal_cookies=  rand();
 
 static int findOrder(size_t size){
@@ -289,7 +291,7 @@ void sfree(void* p){
         return;////////already freed
     if(m_metaData->requested_size<=BLOCK_SIZE){
         m_metaData->is_free=true;
-        combine(m_metaData);
+        combine(m_metaData,0);
     }
     else{
         deleteMappedBl(m_metaData);
@@ -337,6 +339,40 @@ size_t _size_meta_data(){
 
 
 
-void combine(void *p){
-    
+void combine(void *p,size_t m_maxCapSize){
+    MallocMetaData* m_merged;
+    MallocMetaData* m_bud;
+    free_block=free_block+1;
+    MallocMetaData * m_meta=(MallocMetaData*)p;
+    free_bytes=free_bytes+m_meta->requested_size;
+    while(isMergible(m_meta)){
+        //need to implement isMergible.
+        if (m_maxCapSize>0 &&m_meta->requested_size>=m_maxCapSize){
+            break;
+        }
+        m_bud=(MallocMetaData*)gtbudd(m_meta,0);
+        m_merged= (MallocMetaData*)((unsigned long)m_bud > (unsigned long)m_meta) ? m_meta : m_bud;
+        size_t mshndlSize=2*(sizeof(*m_meta)+m_bud->requested_size)-sizeof(MallocMetaData);//*m_meta  instead of MallocMetaData struct.
+        removeblock(m_bud);
+        removeblock(m_meta);
+        free_block=free_block-1;
+        m_merged->is_free=true;
+        m_merged->requested_size=mshndlSize;
+        m_meta=m_merged;
+        allocated_block=allocated_block-1;
+        metaDataBlocks=metaDataBlocks-1;
+        free_bytes=sizeof(MallocMetaData)+free_bytes;
+        allocated_bytes=sizeof(MallocMetaData)+allocated_bytes;
+    }
+    addBFree(m_meta);
+}
+
+
+
+void* srealloc(void* oldp, size_t size){
+    if(size> MAX_SIZE || size == 0) 
+        return nullptr;
+    if (oldp == nullptr) {
+        return smalloc(size);
+    }
 }
