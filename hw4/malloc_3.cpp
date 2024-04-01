@@ -16,6 +16,11 @@ size_t free_block =0;
 size_t metaDataBlocks = 0;
 bool is_initialized =false;
 
+MallocMetaData* getMetaData(void*p);
+void combine(MallocMetaData* p);
+void deleteMappedBl(void *p);
+
+static void putNew(size_t size,void* ptr);
 int golbal_cookies=  rand();
 
 static int findOrder(size_t size){
@@ -129,7 +134,7 @@ static void removeblock(void* ptr){
 
 
 
-static void split(size_t size,void* ptr){
+static void putNew(size_t size,void* ptr){
     int find_order= findOrder(size);
     MallocMetaData* current=(MallocMetaData*)ptr;
     size_t temp_size= current->requested_size+ sizeof(MallocMetaData);
@@ -178,12 +183,12 @@ void* smalloc(size_t size){
         
 
         size_t to_allocate = (BLOCK_SIZE * INITIAL_BLOCK);
-        void* temp= sbrk(to_allocate) 
+        void* temp= sbrk(to_allocate); 
         if((int)temp==-1) return NULL;
         unsigned long head= (unsigned long) temp;
         char* current =(char*)head;
 
-        for(int i =0; i< INITIAL_BLOCK)
+        for(int i =0; i< INITIAL_BLOCK;i++)
         {
             MallocMetaData* meta_temp= (MallocMetaData*) current;
             if(i==0) meta_temp->prev=nullptr;
@@ -265,9 +270,33 @@ void* smalloc(size_t size){
 }
 
 
+void* scalloc(size_t num, size_t size){
+    if (num == 0 || size == 0 || num * size > MAX_SIZE)  
+        return nullptr;
+    void* new_block= smalloc(num*size);
+    if(new_block==nullptr)    
+        return nullptr;
+    memset(new_block, 0, num*size);
+    return new_block;
+}
 
-
-
+void sfree(void* p){
+    if(p=nullptr)
+        return ;
+    MallocMetaData* m_metaData=getMetaData(p);
+    //verifyCookie();
+    if(m_metaData->is_free)
+        return;////////already freed
+    if(m_metaData->requested_size<=BLOCK_SIZE){
+        m_metaData->is_free=true;
+        combine(m_metaData);
+    }
+    else{
+        deleteMappedBl(m_metaData);
+        m_metaData->is_free=true;
+        munmap((void*)(m_metaData),m_metaData->requested_size+sizeof(*m_metaData));
+    }
+}
 
 
 
@@ -302,4 +331,12 @@ size_t _num_meta_data_bytes(){
 }
 size_t _size_meta_data(){
     return sizeof(MallocMetaData);
+}
+
+
+
+
+
+void combine(void *p){
+    
 }
