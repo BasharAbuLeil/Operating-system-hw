@@ -3,6 +3,7 @@
 #include <string.h>
 #include <math.h>
 #include <sys/mman.h>
+#include<iostream>
 #define MAX_SIZE 100000000
 #define BLOCK_SIZE (1024*128)
 #define MAX_ORDER 10
@@ -15,7 +16,7 @@ size_t free_bytes=0;
 size_t free_block =0;
 size_t metaDataBlocks = 0;
 bool is_initialized =false;
-
+MallocMetaData* attemptMrg(size_t targetSize,MallocMetaData* p);
 MallocMetaData* getMetaData(void*p);
 void combine(void *p,size_t m_maxCapSize);
 void deleteMappedBl(void *p);
@@ -300,19 +301,6 @@ void sfree(void* p){
     }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 size_t _num_free_blocks(){
     return free_block;
 }
@@ -374,5 +362,27 @@ void* srealloc(void* oldp, size_t size){
         return nullptr;
     if (oldp == nullptr) {
         return smalloc(size);
+    }
+    MallocMetaData* m_meta =(MallocMetaData*)getMetaData(oldp);
+    if (BLOCK_SIZE<size)
+    {
+        if (m_meta->requested_size!=size){
+            void* newBigBlock = smalloc(size);
+            memmove(newBigBlock,oldp,size);
+            sfree(oldp);
+            return newBigBlock;
+        }
+        return oldp;
+    }
+    if(m_meta->requested_size>=size){
+        return oldp;
+    }
+    void * res=nullptr;
+    MallocMetaData* m_mrg=attemptMrg(size,m_meta);
+    if(m_mrg==nullptr){
+        res=smalloc(size);
+        if(res=nullptr)
+            return nullptr;
+        memmove(res,oldp,)
     }
 }
