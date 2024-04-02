@@ -15,7 +15,7 @@ struct MallocMetadata{
 MallocMetadata* gobal_pointer=nullptr;
 
 void* smalloc(size_t size){
-    if(size==NULL||size> MAX_SIZE)return NULL;
+    if(size==0||size> MAX_SIZE)return NULL;
     MallocMetadata* temp =gobal_pointer;
     bool is_found=false;
     MallocMetadata* prev=nullptr;

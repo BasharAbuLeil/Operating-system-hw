@@ -367,10 +367,10 @@ void* srealloc(void* oldp, size_t size){
     if (BLOCK_SIZE<size)
     {
         if (m_meta->requested_size!=size){
-            void* newBigBlock = smalloc(size);
-            memmove(newBigBlock,oldp,size);
+            void* mshndlHugeBlock = smalloc(size);
+            memmove(mshndlHugeBlock,oldp,size);
             sfree(oldp);
-            return newBigBlock;
+            return mshndlHugeBlock;
         }
         return oldp;
     }
@@ -383,6 +383,40 @@ void* srealloc(void* oldp, size_t size){
         res=smalloc(size);
         if(res=nullptr)
             return nullptr;
-        memmove(res,oldp,)
+        MallocMetaData* temp=getMetaData(oldp);
+        memmove(res,oldp,temp->requested_size);
+        sfree(oldp);
+        return res;
     }
+    res=(void*)((char*)m_mrg+sizeof(MallocMetaData));
+    memmove(res,oldp,size);
+    free_bytes=free_bytes-m_mrg->requested_size;
+    free_block=free_block-1;
+    m_mrg->is_free=false;
+    return res;
+}
+
+
+
+MallocMetaData* attemptMrg(size_t targetSize,MallocMetaData* p){
+    if(p==nullptr)
+        return nullptr;
+    MallocMetaData* m_bud = nullptr;
+    size_t m_tot = sizeof(MallocMetaData)+targetSize ;
+    MallocMetaData* m_meta = p;
+    size_t m_currLength=sizeof(*m_bud)+m_meta->requested_size;
+    while (m_tot >m_currLength&&m_currLength<BLOCK_SIZE){
+        m_bud=(MallocMetaData*)gtbudd(m_meta,m_currLength-sizeof(MallocMetaData));
+        if(m_bud->is_free==false){
+            break;
+        }
+        m_currLength=2*m_currLength;
+        m_meta=(MallocMetaData*)((unsigned long)m_bud <= (unsigned long)m_meta) ? m_bud : m_meta;
+
+    }
+    if(m_currLength<m_tot||m_currLength>=BLOCK_SIZE){
+        return nullptr;
+    }
+    combine(p,m_currLength-sizeof(*m_meta));
+    return m_meta;
 }
