@@ -17,10 +17,10 @@ MallocMetadata* gobal_pointer=nullptr;
 void* smalloc(size_t size){
     if(size==0||size> MAX_SIZE)return NULL;
     MallocMetadata* temp =gobal_pointer;
-    bool is_found=false;
+  //  bool is_found=false;
     MallocMetadata* prev=nullptr;
     while (temp!=nullptr){
-        if(temp->requested_size==size&& temp->is_free==true)
+        if(temp->requested_size>=size&& temp->is_free==true)
         {
             temp->is_free=false;
             return (void*)((char*)temp + sizeof(MallocMetadata));
@@ -116,7 +116,7 @@ size_t _num_allocated_blocks(){
     MallocMetadata* temp= gobal_pointer;
     while(temp!=nullptr)
     {
-        if(!temp->is_free) counter++;
+        counter++;
         temp= temp->next;
     }
     return counter;
@@ -128,7 +128,7 @@ size_t _num_allocated_bytes(){
     MallocMetadata* temp= gobal_pointer;
     while(temp!=nullptr)
     {
-        if(!temp->is_free)counter+= temp->requested_size;
+        counter+= temp->requested_size;
         
         temp= temp->next;
     }
