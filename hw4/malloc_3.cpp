@@ -144,6 +144,7 @@ static void putNew(size_t size,void* ptr){
     int temp= findOrder(current->requested_size+sizeof(MallocMetaData));
 
     removeblock(current);////////////////
+    allocated_block--;
     while (temp > find_order)
     {
         temp_size= temp_size/2;
@@ -177,12 +178,9 @@ void* smalloc(size_t size){
 
     if(!is_initialized)
     {
-        allocated_block += 32;
-        allocated_bytes += 0;
-        metaDataBlocks=free_block=allocated_block;
+        allocated_block=metaDataBlocks=free_block =32;
         allocated_bytes=free_bytes=(BLOCK_SIZE-sizeof(MallocMetaData))*INITIAL_BLOCK;       
         is_initialized = true;
-
         
 
         size_t to_allocate = (BLOCK_SIZE * INITIAL_BLOCK);
@@ -217,7 +215,7 @@ void* smalloc(size_t size){
         {
             free_blocks_array[i]=nullptr;
         }
-
+        
     }
 
     if(BLOCK_SIZE < sizeof(MallocMetaData)+size)
@@ -229,6 +227,9 @@ void* smalloc(size_t size){
         meta_data->requested_size= size;
         meta_data->is_free=false;
         // check cookies
+        metaDataBlocks=metaDataBlocks+1;
+        allocated_bytes+=size;
+        allocated_block++;
         if (maped_list!= nullptr)
         {
             maped_list->prev= meta_data;
