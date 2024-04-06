@@ -20,13 +20,15 @@ unsigned long globalPointer=0;//////////////////////////////////////////zeady
 void combine(void *p,size_t m_maxCapSize);
 void* getFreeBlock(size_t size);
 void deleteMappedBl(void *p);
+void removeblock(void* p);
 bool isMergible(void *p);
 unsigned long gtbudd(void* p, size_t custSiz);
-static void putNew(size_t size,void* ptr);
+void putNew(size_t size,void* ptr);
+int findOrder(size_t size);
 void* srealloc(void* oldp, size_t size);
 void* mallocLastPart(void * block,size_t size);
 
-static int findOrder(size_t size){
+int findOrder(size_t size){
 /////////////////////////////KHALSA
     int counter = 0;
     size_t right = MIN_BLOCK;
@@ -47,22 +49,20 @@ struct MallocMetaData
 {
    size_t requested_size;
    bool is_free;
-   int cookies;
    MallocMetaData* next;
    MallocMetaData* prev;
 };
     MallocMetaData* attemptMrg(size_t targetSize,MallocMetaData* p);
-    //MallocMetaData* getMetaData(void*p);
     MallocMetaData* free_blocks_array[MAX_ORDER+1];
     MallocMetaData* maped_list =nullptr;
   
 
 
 
-static void addBFree(void* ptr){
+void addBFree(void* p){
     //////////////////////jahez
-    if(ptr==nullptr)return;
-     MallocMetaData* temp= (MallocMetaData*)ptr;
+    if(p==nullptr)return;
+     MallocMetaData* temp= (MallocMetaData*)p;
      int find_order= findOrder(temp->requested_size+sizeof(MallocMetaData));
      if (find_order==-1)return;
      else{
@@ -71,7 +71,7 @@ static void addBFree(void* ptr){
         if(free_blocks_array[find_order]!=nullptr)
         {
             MallocMetaData* helper= free_blocks_array[find_order];
-            while ((unsigned long)ptr > (unsigned long)helper)
+            while ((unsigned long)p > (unsigned long)helper)
             {
                 if(helper->next==nullptr)break;
                 helper=helper->next;
@@ -110,10 +110,10 @@ static void addBFree(void* ptr){
 
 
 
-static void removeblock(void* ptr){
+void removeblock(void* p){
 ///////////////////////////////////////////////khlasA
-   if(ptr==nullptr)return;
-   MallocMetaData* temp= (MallocMetaData*)ptr;
+   if(p==nullptr)return;
+   MallocMetaData* temp= (MallocMetaData*)p;
    if(!temp->is_free)return;
    int find_order= findOrder(temp->requested_size);
    if (find_order==-1)return;
@@ -144,7 +144,7 @@ static void removeblock(void* ptr){
 
 
 
-static void putNew(size_t size,void* ptr){
+void putNew(size_t size,void* ptr){
 ///////////////////////////////////////////////khlasA
     int order = findOrder(size);
     MallocMetaData* m_cur = (MallocMetaData*) ptr;
