@@ -28,30 +28,20 @@ void* srealloc(void* oldp, size_t size);
 int golbal_cookies=  rand();
 
 static int findOrder(size_t size){
-    /*int order = 0;
-    size_t low = 0;
-    size_t high = MIN_BLOCK;
-    while (order <= MAX_ORDER) {
-        if (size >= low && size < high) {
-            return order;
+    int counter = 0;
+    size_t right = MIN_BLOCK;
+    size_t left = 0;
+    while (counter <= MAX_ORDER) {
+        if (size>right||size<left) {
+            counter++;
+            left = right;
+            right *= 2;
         }
-        order++;
-        low = high;
-        high *= 2;
+        else{
+            return counter;
+        }
     }
-    return order;*/
-    int order = 0;
-    size_t low = 0;
-    size_t high =128;// = 2^0
-    while(order<=MAX_ORDER){
-        if(size>=low && size<=high){
-            return order;
-        }
-        order++;
-        low=high;
-        high*=2;
-    }//todo might not be a true result always, fix it.
-    return order; //more than 128 kb
+    return counter;
 }
 struct MallocMetaData
 {
