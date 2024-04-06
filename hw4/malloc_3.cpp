@@ -16,18 +16,18 @@ size_t free_bytes=0;
 size_t free_block =0;
 size_t metaDataBlocks = 0;
 bool is_initialized =false;
-unsigned long heapHead=0;//////////////////////////////////////////zeady
-void* initHeap();/////////////////////////////////////////////zeady
+unsigned long globalPointer=0;//////////////////////////////////////////zeady
 void combine(void *p,size_t m_maxCapSize);
-void* findFreeBlock(size_t size);
+void* getFreeBlock(size_t size);
 void deleteMappedBl(void *p);
 bool isMergible(void *p);
 unsigned long gtbudd(void* p, size_t custSiz);
 static void putNew(size_t size,void* ptr);
-void* srealloc(void* oldp, size_t size); 
-int golbal_cookies=  rand();
+void* srealloc(void* oldp, size_t size);
+void* mallocLastPart(void * block,size_t size);
 
 static int findOrder(size_t size){
+/////////////////////////////KHALSA
     int counter = 0;
     size_t right = MIN_BLOCK;
     size_t left = 0;
@@ -60,7 +60,8 @@ struct MallocMetaData
 
 
 static void addBFree(void* ptr){
-    /*if(ptr==nullptr)return;
+    //////////////////////jahez
+    if(ptr==nullptr)return;
      MallocMetaData* temp= (MallocMetaData*)ptr;
      int find_order= findOrder(temp->requested_size+sizeof(MallocMetaData));
      if (find_order==-1)return;
@@ -99,54 +100,18 @@ static void addBFree(void* ptr){
 
             
         }
-
-     }*/
-     if(ptr == nullptr){
-        return;
-    }
-    MallocMetaData* metaData = (MallocMetaData*)ptr;
-    int order = findOrder(metaData->requested_size + sizeof(MallocMetaData));
-    if(order == -1 ){
-        return;
-    }
-    else{
-        metaData->is_free=true;
-        if(free_blocks_array[order] == nullptr){
-            free_blocks_array[order]  = metaData;
-            return;
-        }else{
-            MallocMetaData* current = free_blocks_array[order];
-            while((unsigned long)current < (unsigned long)ptr){
-                if(current->next== nullptr){
-                    break;
-                }
-                current = current->next;
-            }
-            if(current->next==nullptr){
-                current->next=metaData;
-                metaData->next=nullptr;
-                metaData->prev=current;
-                return;
-            }
-            metaData->prev=current->prev;
-            metaData->next=current;
-            current->prev=metaData;
-            if(metaData->prev!= nullptr){
-                metaData->prev->next=metaData;
-            }else{
-                free_blocks_array[order]  = metaData;
-            }
+        else{
+            free_blocks_array[find_order]=temp;
         }
-    }
 
-
+     }
 }
 
 
 
 
 static void removeblock(void* ptr){
-
+///////////////////////////////////////////////khlasA
    if(ptr==nullptr)return;
    MallocMetaData* temp= (MallocMetaData*)ptr;
    if(!temp->is_free)return;
@@ -154,12 +119,7 @@ static void removeblock(void* ptr){
    if (find_order==-1)return;
    else
    {
-        if(free_blocks_array[find_order]==temp){
-            free_blocks_array[find_order]= temp->next;
-            if(temp->next!=nullptr) temp->next->prev=nullptr;
-        }
-        else
-        {
+        if(free_blocks_array[find_order]!=temp){
             if(temp->prev==nullptr&&temp->next==nullptr)return;
             MallocMetaData* prev = temp->prev;
             MallocMetaData* next = temp->next;
@@ -168,49 +128,24 @@ static void removeblock(void* ptr){
             {
                next->prev=prev;
             }
+            
+        }
+        else
+        {
+            free_blocks_array[find_order]= temp->next;
+            if(temp->next!=nullptr) temp->next->prev=nullptr;
         }
         
    }
-   temp->prev=nullptr;
-   temp->next=nullptr;
+   temp->prev=temp->next=nullptr;
    
- /* if(ptr == nullptr){
-        return;
-    }
-////////////////////////////////////////////////////////////abdallahkod///////////////////////
-    MallocMetaData* metaData = (MallocMetaData*)ptr;
-    if(!metaData->is_free){
-        return ;
-    }
-    int order = findOrder(metaData->requested_size);
-    if(order ==-1 ){
-        return;
-    }//todo complete
-    else{
-        if(free_blocks_array[order] == metaData){
-            MallocMetaData* next = metaData->next;
-            free_blocks_array[order] = next;
-            if(next != nullptr){
-                next->prev=nullptr;
-            }
-        }
-        else{
-            if(metaData->next == nullptr && metaData->prev == nullptr){
-                return;
-            }
-            metaData->prev->next=metaData->next;
-            if(metaData->next!= nullptr){
-                metaData->next->prev=metaData->prev;
-            }
-        }
-    }
-    metaData->next=metaData->prev=nullptr;
-    */
+ 
 }
 
 
 
 static void putNew(size_t size,void* ptr){
+///////////////////////////////////////////////khlasA
     int order = findOrder(size);
     MallocMetaData* m_cur = (MallocMetaData*) ptr;
     removeblock(m_cur);
@@ -237,149 +172,44 @@ static void putNew(size_t size,void* ptr){
 
 
 void* smalloc(size_t size){
-
-    /*if(size > MAX_SIZE || size ==0 )// check if have to size==0
-    {
-        return NULL;
-    }
-
-    if(!is_initialized)
-    {
-        allocated_block=metaDataBlocks=free_block =32;
-        allocated_bytes = free_bytes = BLOCK_SIZE*INITIAL_BLOCK - sizeof(MallocMetaData)*INITIAL_BLOCK;      
+    if (!is_initialized) {
+        free_block =INITIAL_BLOCK;
+        allocated_block=INITIAL_BLOCK;
+        metaDataBlocks=INITIAL_BLOCK;
+        allocated_bytes =  BLOCK_SIZE*INITIAL_BLOCK - sizeof(MallocMetaData)*INITIAL_BLOCK;
+        free_bytes = BLOCK_SIZE*INITIAL_BLOCK - sizeof(MallocMetaData)*INITIAL_BLOCK;
         is_initialized = true;
-        
-
-        size_t to_allocate = (BLOCK_SIZE * INITIAL_BLOCK);
-        void* temp= sbrk(to_allocate); 
-        if(temp==nullptr) return nullptr;
-        unsigned long head= (unsigned long) temp;
-        char* current =(char*)head;
-
-        for(int i =0; i< INITIAL_BLOCK;i++)
-        {
-            MallocMetaData* meta_temp= (MallocMetaData*) current;
-            if(i==0) meta_temp->prev=nullptr;
-            else
-            {
-                meta_temp->prev= (MallocMetaData*)((char*)current-BLOCK_SIZE);
-            }
-            if(i==INITIAL_BLOCK-1) meta_temp->next=nullptr;
-            else
-            {
-                meta_temp->next= (MallocMetaData*)((char*)current+BLOCK_SIZE);
-            }
-
-            meta_temp->is_free= true;
-            meta_temp->cookies=golbal_cookies;
-            meta_temp->requested_size= BLOCK_SIZE-sizeof(MallocMetaData);
-            current+=BLOCK_SIZE;  
-            
-        }
-
-        free_blocks_array[MAX_ORDER]=(MallocMetaData*)head;
-        for (int i = 0; i < MAX_ORDER; i++)
-        {
-            free_blocks_array[i]=nullptr;
-        }
-        if (initHeap() == nullptr) { //initHeap Failed
-            return nullptr;
-        }
-    }
-
-    if(BLOCK_SIZE < sizeof(MallocMetaData)+size)
-    {
-        void* temp = (void*)mmap(nullptr,sizeof(MallocMetaData)+size,PROT_READ | PROT_WRITE,MAP_ANONYMOUS | MAP_PRIVATE,-1,0);
-        if(temp == nullptr)return NULL;
-        MallocMetaData* meta_data= (MallocMetaData*)temp;
-        meta_data->cookies= golbal_cookies;
-        meta_data->requested_size= size;
-        meta_data->is_free=false;
-        // check cookies
-        metaDataBlocks=metaDataBlocks+1;
-        allocated_bytes+=size;
-        allocated_block++;
-        if (maped_list!= nullptr)
-        {
-            maped_list->prev= meta_data;
-            meta_data->next=maped_list;
-            meta_data->prev=nullptr;
-            maped_list=meta_data;
-        }
-        else
-        {
-            maped_list= meta_data;
-        }
-
-        return (void*)((char*)meta_data+sizeof(MallocMetaData));
-        
-    }
-    else
-    {
-         int find_order= findOrder(size+sizeof(MallocMetaData));
-         if(find_order==-1) return NULL;
-         while (find_order <= MAX_ORDER)
-         {
-            if (free_blocks_array[find_order]!=nullptr)
-            {
-                break;// end the while(check if need void*)
-            }
-            find_order++;     
-         }
-         if(find_order== MAX_ORDER+1)return NULL;// the while didnt break
-           
-          putNew(size+sizeof(MallocMetaData),free_blocks_array[find_order]);
-          free_blocks_array[find_order]->is_free=false;
-          free_block= free_block-1;
-          free_bytes -= free_blocks_array[find_order]->requested_size;
-          
-          return (void*)((char*)free_blocks_array[find_order]+sizeof(MallocMetaData));
-            
-    }
-    void* freeBlock = findFreeBlock(sizeof(MallocMetaData) + size);
-    if(freeBlock == nullptr){
-        return nullptr;
-    }
-    putNew(sizeof(MallocMetaData) + size,freeBlock);
-    MallocMetaData* headerData=(MallocMetaData*)freeBlock;
-    headerData->is_free=true;
-    free_block--;
-    free_bytes-=headerData->requested_size;
-    return (void*)((char*)headerData+sizeof(MallocMetaData));*/
-    if (!is_initialized) {////////////////////////init heap
-        size_t additionalMemory = (INITIAL_BLOCK*BLOCK_SIZE-(unsigned long)sbrk(0))%(INITIAL_BLOCK*BLOCK_SIZE);// first sbrk call
-        if(sbrk(additionalMemory)== nullptr){//second sbrk call
+        size_t additionalMemory = (INITIAL_BLOCK*BLOCK_SIZE-(unsigned long)sbrk(0))%(INITIAL_BLOCK*BLOCK_SIZE);
+        if(sbrk(additionalMemory)== nullptr){
              return nullptr;
          }
-        void* result =sbrk(INITIAL_BLOCK*BLOCK_SIZE) ;//third and last sbrk call
-        if(result == nullptr){
+        void* res =sbrk(INITIAL_BLOCK*BLOCK_SIZE) ;
+        if(res == nullptr){
             return nullptr;
         }
-        heapHead = (unsigned long)result;
-        char* currentAddress =(char*) heapHead;
+        globalPointer = (unsigned long)res;
+        char* currentAddress =(char*) globalPointer;
         for(int i=0;i<INITIAL_BLOCK;++i){
             MallocMetaData* metaDataPtr = (MallocMetaData*)currentAddress;
-            MallocMetaData* prev = (i == 0) ? nullptr : (MallocMetaData*)((char*)currentAddress-BLOCK_SIZE);
-            MallocMetaData* next = (i == INITIAL_BLOCK-1) ? nullptr : (MallocMetaData*)((char*)currentAddress+BLOCK_SIZE);
+            MallocMetaData* prev = (i != 0) ?  (MallocMetaData*)((char*)currentAddress-BLOCK_SIZE):nullptr;
+            MallocMetaData* next = (i != INITIAL_BLOCK-1) ? (MallocMetaData*)(BLOCK_SIZE+(char*)currentAddress):nullptr;
             metaDataPtr->prev = prev;
             metaDataPtr->next = next;
             metaDataPtr->is_free = true;
             metaDataPtr->requested_size = BLOCK_SIZE-sizeof(MallocMetaData);
             currentAddress+=BLOCK_SIZE;
         }
-        free_blocks_array[MAX_ORDER] = (MallocMetaData*)heapHead;
+        free_blocks_array[MAX_ORDER] = (MallocMetaData*)globalPointer;
         for(int i=0;i<MAX_ORDER;++i){ 
             free_blocks_array[i]= nullptr;
         }
-        allocated_block=metaDataBlocks=free_block =INITIAL_BLOCK;
-        allocated_bytes = free_bytes = BLOCK_SIZE*INITIAL_BLOCK - sizeof(MallocMetaData)*INITIAL_BLOCK;
-        is_initialized = true;
-    }////////////////////////////endOfInitHeap
+        
+    }
     if(size > MAX_SIZE){
         return nullptr;
     }
-    size_t totalSize = sizeof(MallocMetaData) + size;
-    if (totalSize > BLOCK_SIZE) {
+    size_t tot_size = sizeof(MallocMetaData) + size;
+    if (tot_size > BLOCK_SIZE) {
         void* temp = (void*)mmap(nullptr,sizeof(MallocMetaData)+size,PROT_READ | PROT_WRITE,MAP_ANONYMOUS | MAP_PRIVATE,-1,0);
         if(temp == nullptr)return NULL;
         MallocMetaData* meta_data= (MallocMetaData*)temp;
@@ -402,20 +232,14 @@ void* smalloc(size_t size){
 
         return (void*)((char*)meta_data+sizeof(MallocMetaData));
     }
-    void* freeBlock = findFreeBlock(totalSize);
-    if(freeBlock == nullptr){
-        return nullptr;
-    }
-    putNew(totalSize,freeBlock);
-    MallocMetaData* metaData = (MallocMetaData*) freeBlock;
-    metaData->is_free=false;
-    free_bytes-=metaData->requested_size;
-    free_block--;
-    return (void*)((char*)metaData+sizeof(MallocMetaData));
+    void* block = getFreeBlock(tot_size);
+    return mallocLastPart(block,tot_size);
+   
 }
 
 
 void* scalloc(size_t num, size_t size){
+    ///////////////////khalsa.
     if (num == 0 || size == 0 || num * size > MAX_SIZE)  
         return nullptr;
     void* new_block= smalloc(num*size);
@@ -426,6 +250,7 @@ void* scalloc(size_t num, size_t size){
 }
 
 void sfree(void* p){
+    ////////////////////////jahez.
     if(p==nullptr)
         return ;
     MallocMetaData* m_metaData=(MallocMetaData*)((char*)p-sizeof(MallocMetaData));
@@ -469,6 +294,7 @@ size_t _size_meta_data(){
 
 
 void combine(void *p,size_t m_maxCapSize){
+    /////////////////////jahez.
     MallocMetaData* m_merged;
     MallocMetaData* m_bud;
     free_block=free_block+1;
@@ -481,12 +307,12 @@ void combine(void *p,size_t m_maxCapSize){
         }
         m_bud=(MallocMetaData*)gtbudd(m_meta,0);
         m_merged= (MallocMetaData*)((unsigned long)m_bud > (unsigned long)m_meta) ? m_meta : m_bud;
-        size_t mshndlSize=2*(sizeof(*m_meta)+m_bud->requested_size)-sizeof(MallocMetaData);//*m_meta  instead of MallocMetaData struct.
+        size_t bigSiz=2*(sizeof(*m_meta)+m_bud->requested_size)-sizeof(MallocMetaData);//*m_meta  instead of MallocMetaData struct.
         removeblock(m_bud);
         removeblock(m_meta);
         free_block=free_block-1;
         m_merged->is_free=true;
-        m_merged->requested_size=mshndlSize;
+        m_merged->requested_size=bigSiz;
         m_meta=m_merged;
         allocated_block=allocated_block-1;
         metaDataBlocks=metaDataBlocks-1;
@@ -499,7 +325,8 @@ void combine(void *p,size_t m_maxCapSize){
 
 
 void* srealloc(void* oldp, size_t size){
-    if(size> MAX_SIZE || size == 0) 
+///////////////////khalsa.
+    if(size>= MAX_SIZE || size == 0) 
         return nullptr;
     if (oldp == nullptr) {
         return smalloc(size);
@@ -540,48 +367,34 @@ void* srealloc(void* oldp, size_t size){
 
 
 MallocMetaData* attemptMrg(size_t targetSize,MallocMetaData* p){
+/////////////////////khalsa.
     if(p==nullptr)
         return nullptr;
     MallocMetaData* m_bud = nullptr;
-    size_t m_tot = sizeof(MallocMetaData)+targetSize ;
+    size_t m_tot = sizeof(*m_bud)+targetSize ;
     MallocMetaData* m_meta = p;
     size_t m_currLength=sizeof(*m_bud)+m_meta->requested_size;
-    while (m_tot >m_currLength&&m_currLength<BLOCK_SIZE){
+    while (m_currLength<BLOCK_SIZE&&m_tot >m_currLength){
         m_bud=(MallocMetaData*)gtbudd(m_meta,m_currLength-sizeof(MallocMetaData));
         if(m_bud->is_free==false){
             break;
         }
-        m_currLength=2*m_currLength;
         m_meta=(MallocMetaData*)((unsigned long)m_bud <= (unsigned long)m_meta) ? m_bud : m_meta;
+        m_currLength=2*m_currLength;
 
     }
-    if(m_currLength<m_tot||m_currLength>=BLOCK_SIZE){
-        return nullptr;
+
+    if(m_currLength>=m_tot&&m_currLength<=BLOCK_SIZE){
+        combine(p,m_currLength-sizeof(*m_meta));
+        return m_meta;
     }
-    combine(p,m_currLength-sizeof(*m_meta));
-    return m_meta;
+    return nullptr;
 }
 
 
 
 bool isMergible(void *p){
-    /*
-    if(ptr == nullptr){
-        return false;
-    }
-    MallocMetaData* current =(MallocMetaData*) ptr;
-    if(current->getSize() +sizeof(MallocMetaData) >= INITIAL_BLOCK_SIZE){
-        return false;
-    }
-    MallocMetaData* buddy= (MallocMetaData*)getBuddy(current);
-    if(!buddy->checkFree()){
-        return false;
-    }
-    if(buddy->getSize()!= current->getSize()){
-        return false;
-    }
-    return true;
-    */
+    ////////////////////////khalsa.
     MallocMetaData* m_bud;
     MallocMetaData* m_meta;
     if(!p)
@@ -599,6 +412,7 @@ bool isMergible(void *p){
 
 
 unsigned long gtbudd(void* p, size_t custSiz){
+    ////////////////////khalsa
     MallocMetaData* m_meta = (MallocMetaData*)p;
     size_t length;
     if(custSiz!=0)
@@ -609,49 +423,42 @@ unsigned long gtbudd(void* p, size_t custSiz){
 }
 
 
-
+void *mallocLastPart(void * block,size_t size){
+/////////////////////////////////////khalsa .
+     if(block == nullptr){
+        return nullptr;
+    }
+    putNew(size,block);
+    MallocMetaData* m_met = (MallocMetaData*) block;
+    free_bytes-=m_met->requested_size;
+    free_block--;
+    m_met->is_free=false;
+    return (void*)((char*)m_met+sizeof(MallocMetaData));
+}
 void deleteMappedBl(void *p){
-    /*
-    if(ptr == nullptr){
-        return;
-    }
-    MallocMetaData* metaData = (MallocMetaData*) ptr;
-    metaData->freed(true);
-    MallocMetaData* prev = metaData->getPrev();
-    MallocMetaData* next = metaData->getNext();
-    allocatedBlocks--;
-    metaDataBlocks--;
-    allocatedBytes-=metaData->getSize();
-    if(ptr == mmappedBlocksHead){
-        if(next == nullptr){
-            mmappedBlocksHead = nullptr;
-            return;
-        }else{
-            mmappedBlocksHead = next;
-            next->setPrev(nullptr);
-        }
-    }else{
-        if(next == nullptr){
-            prev->setNext(nullptr);
-        }else{
-            next->setPrev(prev);
-            prev->setNext(next);
-        }
-    }
-    metaData->setNext(nullptr);
-    metaData->setPrev(nullptr);
-    */
+    ////////////jahez
     if(p == nullptr){
         return;
     }
     metaDataBlocks=metaDataBlocks-1;
     MallocMetaData* m_meta = (MallocMetaData*) p;
-    m_meta->is_free=true;
+    allocated_bytes=allocated_bytes-m_meta->requested_size;
     MallocMetaData* m_next = m_meta->next;
     allocated_block=allocated_block-1;
     MallocMetaData* m_pre = m_meta->prev;
-    allocated_bytes=allocated_bytes-m_meta->requested_size;
-    if (maped_list==p){
+    m_meta->is_free=true;
+    if (maped_list!=p){
+        if (m_next!=nullptr)
+        {
+            m_pre->next=m_next;
+            m_next->prev=m_pre;
+        }
+        else{
+            m_pre->next=nullptr;
+        }
+        
+    }
+    else{
         if(m_next!=nullptr){
             maped_list=m_next;
             m_next->prev=nullptr;
@@ -661,35 +468,24 @@ void deleteMappedBl(void *p){
             return;
         }
     }
-    else{
-        if (m_next!=nullptr)
-        {
-            m_pre->next=m_next;
-            m_next->prev=m_pre;
-        }
-        else{
-            m_pre->next=nullptr;
-        }
-    }
-    m_meta->next=nullptr;
-    m_meta->prev=nullptr;
+    m_meta->prev=m_meta->next=nullptr;
 }
 
 
 
 // addition
 
-void* findFreeBlock(size_t size){
-    int order = findOrder(size);
-    if(order == -1){
+void* getFreeBlock(size_t size){
+//////////////////////////jahez
+    int m_ord = findOrder(size);
+    if(m_ord == -1){
         return nullptr; // should not be the case.
     }
-    int firstAvailableOrderBlocks = order;
-    while(firstAvailableOrderBlocks <= MAX_ORDER){
-        if(free_blocks_array[firstAvailableOrderBlocks]!=nullptr){
-            return free_blocks_array[firstAvailableOrderBlocks] ;
+    while(m_ord <= MAX_ORDER){
+        if(free_blocks_array[m_ord]!=nullptr){
+            return free_blocks_array[m_ord] ;
         }
-        firstAvailableOrderBlocks++;
+        m_ord++;
     }
     return nullptr;
 
