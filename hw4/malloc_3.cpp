@@ -16,7 +16,7 @@ size_t free_bytes=0;
 size_t free_block =0;
 size_t metaDataBlocks = 0;
 bool is_initialized =false;
-unsigned long globalPointer=0;//////////////////////////////////////////zeady
+unsigned long globalPointer=0;
 void combine(void *p,size_t m_maxCapSize);
 void* getFreeBlock(size_t size);
 void deleteMappedBl(void *p);
@@ -25,11 +25,19 @@ bool isMergible(void *p);
 unsigned long gtbudd(void* p, size_t custSiz);
 void putNew(size_t size,void* ptr);
 int findOrder(size_t size);
+void* smalloc(size_t size);
+void* scalloc(size_t num, size_t size);
+void sfree(void* p);
 void* srealloc(void* oldp, size_t size);
+size_t _num_free_blocks();
+size_t _num_free_bytes();
+size_t _num_allocated_blocks();
+size_t _num_allocated_bytes();
+size_t _num_meta_data_bytes();
+size_t _size_meta_data();
 void* mallocLastPart(void * block,size_t size);
 
 int findOrder(size_t size){
-/////////////////////////////KHALSA
     int counter = 0;
     size_t right = MIN_BLOCK;
     size_t left = 0;
@@ -60,7 +68,6 @@ struct MallocMetaData
 
 
 void addBFree(void* p){
-    //////////////////////jahez
     if(p==nullptr)return;
      MallocMetaData* temp= (MallocMetaData*)p;
      int find_order= findOrder(temp->requested_size+sizeof(MallocMetaData));
@@ -111,7 +118,6 @@ void addBFree(void* p){
 
 
 void removeblock(void* p){
-///////////////////////////////////////////////khlasA
    if(p==nullptr)return;
    MallocMetaData* temp= (MallocMetaData*)p;
    if(!temp->is_free)return;
@@ -145,7 +151,6 @@ void removeblock(void* p){
 
 
 void putNew(size_t size,void* ptr){
-///////////////////////////////////////////////khlasA
     int order = findOrder(size);
     MallocMetaData* m_cur = (MallocMetaData*) ptr;
     removeblock(m_cur);
@@ -239,7 +244,6 @@ void* smalloc(size_t size){
 
 
 void* scalloc(size_t num, size_t size){
-    ///////////////////khalsa.
     if (num == 0 || size == 0 || num * size > MAX_SIZE)  
         return nullptr;
     void* new_block= smalloc(num*size);
@@ -250,7 +254,6 @@ void* scalloc(size_t num, size_t size){
 }
 
 void sfree(void* p){
-    ////////////////////////jahez.
     if(p==nullptr)
         return ;
     MallocMetaData* m_metaData=(MallocMetaData*)((char*)p-sizeof(MallocMetaData));
@@ -294,14 +297,12 @@ size_t _size_meta_data(){
 
 
 void combine(void *p,size_t m_maxCapSize){
-    /////////////////////jahez.
     MallocMetaData* m_merged;
     MallocMetaData* m_bud;
     free_block=free_block+1;
     MallocMetaData * m_meta=(MallocMetaData*)p;
     free_bytes=free_bytes+m_meta->requested_size;
     while(isMergible(m_meta)){
-        //need to implement isMergible.
         if (m_maxCapSize>0 &&m_meta->requested_size>=m_maxCapSize){
             break;
         }
@@ -325,7 +326,6 @@ void combine(void *p,size_t m_maxCapSize){
 
 
 void* srealloc(void* oldp, size_t size){
-///////////////////khalsa.
     if(size>= MAX_SIZE || size == 0) 
         return nullptr;
     if (oldp == nullptr) {
@@ -367,7 +367,6 @@ void* srealloc(void* oldp, size_t size){
 
 
 MallocMetaData* attemptMrg(size_t targetSize,MallocMetaData* p){
-/////////////////////khalsa.
     if(p==nullptr)
         return nullptr;
     MallocMetaData* m_bud = nullptr;
@@ -394,7 +393,6 @@ MallocMetaData* attemptMrg(size_t targetSize,MallocMetaData* p){
 
 
 bool isMergible(void *p){
-    ////////////////////////khalsa.
     MallocMetaData* m_bud;
     MallocMetaData* m_meta;
     if(!p)
@@ -412,7 +410,6 @@ bool isMergible(void *p){
 
 
 unsigned long gtbudd(void* p, size_t custSiz){
-    ////////////////////khalsa
     MallocMetaData* m_meta = (MallocMetaData*)p;
     size_t length;
     if(custSiz!=0)
@@ -424,7 +421,6 @@ unsigned long gtbudd(void* p, size_t custSiz){
 
 
 void *mallocLastPart(void * block,size_t size){
-/////////////////////////////////////khalsa .
      if(block == nullptr){
         return nullptr;
     }
@@ -473,13 +469,11 @@ void deleteMappedBl(void *p){
 
 
 
-// addition
 
 void* getFreeBlock(size_t size){
-//////////////////////////jahez
     int m_ord = findOrder(size);
     if(m_ord == -1){
-        return nullptr; // should not be the case.
+        return nullptr; 
     }
     while(m_ord <= MAX_ORDER){
         if(free_blocks_array[m_ord]!=nullptr){
